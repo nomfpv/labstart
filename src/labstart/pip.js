@@ -5,7 +5,7 @@ export function isHudShortcut(event) {
 
 let pending
 function announce(open) {
-    chrome.runtime.sendMessage({ type: 'termbar:hud-presence', open }).catch(() => {})
+    chrome.runtime.sendMessage({ type: 'labstart:hud-presence', open }).catch(() => {})
 }
 
 export function dismissHud() {
@@ -16,16 +16,16 @@ export function dismissHud() {
 }
 
 export function installHudTrigger() {
-    if (globalThis.termbarToggleHud) return
+    if (globalThis.labstartToggleHud) return
     const listener = (message, sender, respond) => {
-        if (sender.id === chrome.runtime.id && message?.type === 'termbar:hud-dismiss') respond(dismissHud())
+        if (sender.id === chrome.runtime.id && message?.type === 'labstart:hud-dismiss') respond(dismissHud())
     }
     chrome.runtime.onMessage.addListener(listener)
-    globalThis.termbarToggleHud = toggleHud
-    globalThis.termbarStopHudTrigger = () => {
+    globalThis.labstartToggleHud = toggleHud
+    globalThis.labstartStopHudTrigger = () => {
         chrome.runtime.onMessage.removeListener(listener)
-        delete globalThis.termbarToggleHud
-        delete globalThis.termbarStopHudTrigger
+        delete globalThis.labstartToggleHud
+        delete globalThis.labstartStopHudTrigger
     }
 }
 
@@ -36,12 +36,12 @@ export async function toggleHud() {
     if (!api) throw new Error('Document Picture-in-Picture requires a secure Chromium page.')
     if (!navigator.userActivation.isActive) throw new Error('Click open floating HUD to allow Picture-in-Picture.')
     pending = (async () => {
-        if (await chrome.runtime.sendMessage({ type: 'termbar:hud-dismiss-other' }).catch(() => false)) return false
+        if (await chrome.runtime.sendMessage({ type: 'labstart:hud-dismiss-other' }).catch(() => false)) return false
         const window = await api.requestWindow({ width: 380, height: 248 })
-        window.document.title = 'termbar'
+        window.document.title = 'labstart'
         const frame = window.document.createElement('iframe')
         frame.src = chrome.runtime.getURL('hud-panel.html')
-        frame.title = 'termbar status'
+        frame.title = 'labstart status'
         frame.referrerPolicy = 'no-referrer'
         frame.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;border:none;background:#141414'
         window.document.body.append(frame)

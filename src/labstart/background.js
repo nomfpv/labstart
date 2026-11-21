@@ -1,21 +1,23 @@
 import {
-    CONFIG_KEY, MIN_INTERVAL, normalizeConfig, RIPE_ORIGIN, SECRETS_KEY, sourceOrigins, STATE_KEY, WEB_ORIGINS,
+    CONFIG_KEY, DOH_ORIGIN, MIN_INTERVAL, normalizeConfig, RIPE_ORIGIN, SECRETS_KEY, sourceOrigins, STATE_KEY, WEB_ORIGINS,
 } from './data/config.js'
 import { runSource } from './data/adapters.js'
 import { DEMO_SITE, demoState } from './data/demo.js'
 import {
-    cachedAsn, fetchAsn, navigationMatches, normalizeTiming, publicAddress, siteSnapshot,
+    cachedAsn, fetchAsn, fetchPtr, navigationMatches, normalizeTiming, publicAddress, siteSnapshot,
 } from './data/site.js'
 import { EMPTY_STATE, makeState, queueAlert, sourceSnapshot, takeAlert } from './data/state.js'
 
-const SOURCE_ALARM = 'termbar:source:'
-const DEMO_ALARM = 'termbar:demo'
-const ALERT_ALARM = 'termbar:notify'
-const ALERT_KEY = 'termbarAlert'
-const ASN_CACHE_KEY = 'termbarAsnCache'
+const SOURCE_ALARM = 'labstart:source:'
+const DEMO_ALARM = 'labstart:demo'
+const ALERT_ALARM = 'labstart:notify'
+const ALERT_KEY = 'labstartAlert'
+const ASN_CACHE_KEY = 'labstartAsnCache'
+const NOTIFY_COOLDOWN_MS = 10 * 60_000
+const PTR_CACHE_KEY = 'labstartPtrCache'
 const ASN_TTL = 3_600_000
 const NEGATIVE_ASN_TTL = 300_000
-const navigationKey = tabId => `termbarNavigation:${tabId}`
+const navigationKey = tabId => `labstartNavigation:${tabId}`
 
 let scheduled = Promise.resolve()
 let asnQueue = Promise.resolve()
@@ -28,8 +30,8 @@ function run(work) {
     scheduled = scheduled.then(work).catch(() => {})
 }
 
-function pageConfig({ chipEnabled, disabledSites, demoMode, asnEnabled }) {
-    return { chipEnabled, disabledSites, demoMode, asnEnabled }
+function pageConfig({ chipEnabled, disabledSites, demoMode, asnEnabled, rdnsEnabled }) {
+    return { chipEnabled, disabledSites, demoMode, asnEnabled, rdnsEnabled }
 }
 
 function sendTab(tabId, message, documentId) {
@@ -38,7 +40,7 @@ function sendTab(tabId, message, documentId) {
 
 async function publishAlertLine(state, config) {
     const tabs = await chrome.tabs.query({ url: WEB_ORIGINS })
-    const message = { type: 'termbar:update', state: { severity: state.severity }, config: pageConfig(config) }
+    const message = { type: 'labstart:update', state: { severity: state.severity }, config: pageConfig(config) }
     await Promise.all(tabs.map(tab => sendTab(tab.id, message)))
 }
 
@@ -46,22 +48,29 @@ async function flushAlert() {
     const current = await getSession(ALERT_KEY)
     const settled = takeAlert(current, Date.now())
     if (!settled) return
-    await chrome.storage.session.set({ [ALERT_KEY]: settled })
+    // A source that flaps between states still produces at most one notification per state every few minutes.
+    const now = Date.now()
+    const notifiedAt = current?.notifiedAt ?? {}
+    const quiet = notifiedAt[settled.last] > now - NOTIFY_COOLDOWN_MS
+    await chrome.storage.session.set({
+        [ALERT_KEY]: { ...settled, notifiedAt: quiet ? notifiedAt : { ...notifiedAt, [settled.last]: now } },
+    })
     await chrome.alarms.clear(ALERT_ALARM)
-    if (!(await getConfig()).notificationsEnabled) return
+    if (quiet || !(await getConfig()).notificationsEnabled) return
     const label = { ok: 'checks recovered', warn: 'check warning', crit: 'check failed' }[settled.last]
     const state = await getSession(STATE_KEY)
     const failed = Object.values(state?.sources ?? {}).filter(source => source.severity !== 'ok').map(source => source.label)
     const names = failed.slice(0, 3).join(', ')
     const message = names ? `${names}${failed.length > 3 ? ` +${failed.length - 3} more` : ''}` : 'All configured checks are healthy.'
-    await chrome.notifications?.create('termbar-health', {
-        type: 'basic', iconUrl: chrome.runtime.getURL('icons/128.png'), title: `termbar · ${label}`, message,
+    await chrome.notifications?.create('labstart-health', {
+        type: 'basic', iconUrl: chrome.runtime.getURL('icons/128.png'), title: `labstart · ${label}`, message,
     })
 }
 
 async function updateAlert(severity, enabled) {
     const previous = await getSession(ALERT_KEY)
-    const alert = enabled ? queueAlert(previous, severity, Date.now()) : { last: severity, pending: null }
+    const queued = enabled ? queueAlert(previous, severity, Date.now()) : { last: severity, pending: null }
+    const alert = { ...queued, notifiedAt: previous?.notifiedAt }
     if (previous?.last !== alert.last || previous?.pending !== alert.pending) {
         await chrome.storage.session.set({ [ALERT_KEY]: alert })
     }
@@ -169,6 +178,25 @@ function lookupAsn(ip) {
     return queued
 }
 
+// Reverse DNS runs only when someone opens the details box, never in the background.
+async function lookupPtr(ip, hostname) {
+    const config = await getConfig()
+    if (config.demoMode) return 'edge-24.example.com'
+    if (!config.rdnsEnabled || config.disabledSites.includes(hostname) || !publicAddress(ip)
+        || !await chrome.permissions.contains({ origins: [DOH_ORIGIN] })) return null
+    const now = Date.now()
+    const saved = await getSession(PTR_CACHE_KEY) ?? {}
+    if (saved[ip]?.expires > now) return saved[ip].name
+    let name = null
+    try {
+        name = await fetchPtr(ip)
+    } catch {}
+    const cache = Object.fromEntries(Object.entries(saved).filter(([, record]) => record.expires > now).slice(-255))
+    cache[ip] = { name, expires: now + (name ? ASN_TTL : NEGATIVE_ASN_TTL) }
+    await chrome.storage.session.set({ [PTR_CACHE_KEY]: cache })
+    return name
+}
+
 async function siteResponse(message, sender) {
     const tabId = sender.tab?.id
     const state = await getSession(STATE_KEY) ?? EMPTY_STATE
@@ -187,7 +215,7 @@ async function siteResponse(message, sender) {
                 if (!result?.asn) return
                 const current = await getConfig()
                 if (!current.asnEnabled || current.demoMode || !current.chipEnabled || current.disabledSites.includes(hostname)) return
-                await sendTab(tabId, { type: 'termbar:site-update', site: siteSnapshot(ip, timing, result) }, sender.documentId)
+                await sendTab(tabId, { type: 'labstart:site-update', site: siteSnapshot(ip, timing, result) }, sender.documentId)
             }).catch(() => {})
         }
     }
@@ -200,7 +228,7 @@ async function rememberNavigation({ tabId, documentId, url, ip, timeStamp }) {
     const previous = await getSession(key)
     if (previous?.timeStamp > timeStamp) return
     await chrome.storage.session.set({ [key]: { documentId: documentId ?? null, url, ip: ip ?? null, timeStamp } })
-    await sendTab(tabId, { type: 'termbar:site-refresh' })
+    await sendTab(tabId, { type: 'labstart:site-refresh' })
 }
 
 chrome.runtime.onInstalled.addListener(() => {
@@ -247,11 +275,16 @@ chrome.tabs.onRemoved.addListener(tabId => {
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (sender.id !== chrome.runtime.id) return false
-    if (message?.type === 'termbar:site' && sender.frameId === 0 && sender.tab && /^https?:/.test(sender.url ?? '')) {
+    if (message?.type === 'labstart:site' && sender.frameId === 0 && sender.tab && /^https?:/.test(sender.url ?? '')) {
         void siteResponse(message, sender).then(sendResponse, () => sendResponse(null))
         return true
     }
-    if (message?.type === 'termbar:test-source' && sender.url?.startsWith(chrome.runtime.getURL(''))) {
+    if (message?.type === 'labstart:rdns' && sender.frameId === 0 && sender.tab && /^https?:/.test(sender.url ?? '')) {
+        const ip = typeof message.ip === 'string' ? message.ip.slice(0, 64) : ''
+        void lookupPtr(ip, new URL(sender.url).hostname).then(sendResponse, () => sendResponse(null))
+        return true
+    }
+    if (message?.type === 'labstart:test-source' && sender.url?.startsWith(chrome.runtime.getURL(''))) {
         void checkSource(message.source, message.secret).then(
             result => sendResponse({ ok: true, ...result }),
             error => sendResponse({ ok: false, error: error.message || 'The source could not be checked.' }),

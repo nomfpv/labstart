@@ -1,4 +1,12 @@
 const RIPE_ENDPOINT = 'https://stat.ripe.net/data/prefix-overview/data.json'
+const DOH_ENDPOINT = 'https://cloudflare-dns.com/dns-query'
+const LOOKUP_LIMIT = 256 * 1024
+
+async function limitedJson(response, name) {
+    const text = await response.text()
+    if (text.length > LOOKUP_LIMIT) throw new Error(`${name} response is too large.`)
+    return JSON.parse(text)
+}
 const CDN = { 13335: 'cloudflare', 54113: 'fastly', 20940: 'akamai', 16625: 'akamai', 16509: 'amazon' }
 const BANNED_V4_FIRST = new Set([0, 10, 127])
 
@@ -73,12 +81,36 @@ export async function fetchAsn(ip, { fetcher = fetch } = {}) {
         credentials: 'omit', redirect: 'error', signal: AbortSignal.timeout(5000),
     })
     if (!response.ok) throw new Error(`RIPEstat returned HTTP ${response.status}.`)
-    const { data } = await response.json()
+    const { data } = await limitedJson(response, 'RIPEstat')
     const record = data?.announced ? data.asns?.[0] : null
     const asn = Number(record?.asn)
     if (!Number.isInteger(asn) || asn < 1) return { prefix: ip, asn: null, org: null, cdn: null }
     const prefix = typeof data.resource === 'string' && prefixContains(data.resource, ip) ? data.resource : ip
     return { prefix, asn, org: typeof record.holder === 'string' ? record.holder.slice(0, 100) : null, cdn: CDN[asn] ?? null }
+}
+
+export function ptrName(ip) {
+    const v4 = ipv4Address(ip)
+    if (v4) return [...v4].reverse().join('.') + '.in-addr.arpa'
+    const v6 = ipv6Address(ip)
+    if (!v6) return null
+    const nibbles = v6.map(part => part.toString(16).padStart(4, '0')).join('')
+    return [...nibbles].reverse().join('.') + '.ip6.arpa'
+}
+
+export async function fetchPtr(ip, { fetcher = fetch } = {}) {
+    const name = ptrName(ip)
+    if (!name) return null
+    const url = new URL(DOH_ENDPOINT)
+    url.searchParams.set('name', name)
+    url.searchParams.set('type', 'PTR')
+    const response = await fetcher(url.href, {
+        credentials: 'omit', redirect: 'error', headers: { accept: 'application/dns-json' },
+        signal: AbortSignal.timeout(5000),
+    })
+    if (!response.ok) throw new Error(`DNS lookup returned HTTP ${response.status}.`)
+    const answer = (await limitedJson(response, 'DNS')).Answer?.find(record => record.type === 12)
+    return typeof answer?.data === 'string' ? answer.data.replace(/\.$/, '').slice(0, 253) || null : null
 }
 
 export function normalizeTiming(timing) {

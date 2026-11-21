@@ -21,7 +21,7 @@ export function demoState(now, outage) {
     const homelab = demoSource('homelab', {
         containers: metric('containers', outage ? '15/18' : '18/18', '', status, outage ? 15 : 18),
         tunnels: metric('tunnels', '3/3', '', 'ok', 3),
-        monitors: metric('monitors', outage ? '5 up / 1 down' : '6 up / 0 down', '', status, outage ? 5 : 6),
+        monitors: metric('monitors', outage ? '5/6 up' : '6/6 up', '', status, outage ? 5 : 6),
     })
     homelab.metrics = {
         load: series('load', '%', 28, 11, 0, status, outage ? 94 : undefined),

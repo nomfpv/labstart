@@ -38,3 +38,17 @@ describe('RIPEstat', () => {
         expect(prefixContains('2001:db8::/64', '2001:db8:0:1::4')).toBe(false)
     })
 })
+
+describe('reverse DNS', () => {
+    it('builds PTR names for both families', async () => {
+        const { ptrName } = await import('./site.js')
+        expect(ptrName('192.0.2.10')).toBe(['10', '2', '0', '192', 'in-addr', 'arpa'].join('.'))
+        expect(ptrName('2001:db8::1')).toMatch(/^1\.0\.0\.0\.(0\.){20}8\.b\.d\.0\.1\.0\.0\.2\.ip6\.arpa$/)
+    })
+
+    it('returns the first PTR answer without the trailing dot', async () => {
+        const { fetchPtr } = await import('./site.js')
+        const fetcher = async () => new Response(JSON.stringify({ Answer: [{ type: 12, data: 'host.example.com.' }] }))
+        expect(await fetchPtr('192.0.2.10', { fetcher })).toBe('host.example.com')
+    })
+})

@@ -9,9 +9,9 @@
     import Weather from './lib/components/Weather.svelte'
     import { saveSettings } from './lib/stores/settings-store.svelte.js'
     import { isChrome } from './lib/utils/browser-detect.js'
-    import { applyTheme, publishTheme } from './termbar/theme.js'
-    import { toggleHud, isHudShortcut } from './termbar/pip.js'
-    import StatusBoxes from './termbar/StatusBoxes.svelte'
+    import { applyTheme, publishTheme } from './labstart/theme.js'
+    import { toggleHud, isHudShortcut } from './labstart/pip.js'
+    import StatusBoxes from './labstart/StatusBoxes.svelte'
 
     let showSettings = $state(false)
     let Settings = $state(null)
@@ -51,7 +51,7 @@
     function handleGlobalKeydown(event) {
         if (isHudShortcut(event)) {
             event.preventDefault()
-            toggleHud().catch(() => chrome.runtime.sendMessage({ type: 'termbar:open-launcher' }).catch(() => {}))
+            toggleHud().catch(() => chrome.runtime.sendMessage({ type: 'labstart:open-launcher' }).catch(() => {}))
             return
         }
         if (showSettings) return
@@ -133,7 +133,7 @@
     </div>
 
     <nav aria-label="settings">
-        <a href="./options.html">termbar</a>
+        <a href="./options.html">labstart</a>
         <button class:needs-config={needsConfiguration} onclick={openSettings}>
             settings
         </button>

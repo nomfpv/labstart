@@ -14,8 +14,8 @@ for (const entry of ['content', 'hud-trigger']) {
             emptyOutDir: false,
             sourcemap: false,
             lib: {
-                entry: `src/termbar/${entry}.js`,
-                name: 'termbar',
+                entry: `src/labstart/${entry}.js`,
+                name: 'labstart',
                 formats: ['iife'],
                 fileName: () => entry + '.js',
             },
@@ -25,7 +25,7 @@ for (const entry of ['content', 'hud-trigger']) {
 
 const manifestPath = join(outDir, 'manifest.json')
 const manifest = JSON.parse(await readFile(manifestPath, 'utf8'))
-const googleClient = process.env.TERMBAR_GOOGLE_TASKS_CLIENT_ID
+const googleClient = process.env.LABSTART_GOOGLE_TASKS_CLIENT_ID
 if (googleClient) {
     if (!/^[\w-]+\.apps\.googleusercontent\.com$/.test(googleClient)) {
         throw new Error('Invalid Google Tasks OAuth client ID')
@@ -51,6 +51,6 @@ async function collect(directory, prefix = '') {
     }
 }
 await collect(outDir)
-const zipPath = `dist/termbar-chrome-v${manifest.version}.zip`
+const zipPath = `dist/labstart-chrome-v${manifest.version}.zip`
 await writeFile(zipPath, zipSync(archive))
 console.log(zipPath)

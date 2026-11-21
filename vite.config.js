@@ -18,7 +18,7 @@ export default defineConfig({
                 options: 'options.html',
                 hud: 'hud.html',
                 'hud-panel': 'hud-panel.html',
-                background: 'src/termbar/worker.js',
+                background: 'src/labstart/worker.js',
             },
             output: { entryFileNames: '[name].js' },
         },

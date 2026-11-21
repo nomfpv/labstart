@@ -26,7 +26,7 @@
     opacity: 0.52;
     transition: opacity 180ms ease, translate 200ms ease;
 }
-#corner[data-video] { opacity: 0.22; }
+#corner[data-video]:not([data-expanded]) { opacity: 0; pointer-events: none; }
 #corner:hover, #corner:focus-within, #corner[data-expanded] { opacity: 1; }
 #corner[data-scroll] { opacity: 0; pointer-events: none; }
 #corner[data-away] { translate: 0 calc(100% + 10px); pointer-events: none; }
@@ -61,6 +61,8 @@ button:focus-visible { outline: 1px solid var(--txt-1); outline-offset: 2px; }
 dl { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 3px 10px; margin: 0 0 7px; }
 dt { color: var(--txt-3); }
 dd { color: var(--txt-1); margin: 0; overflow-wrap: anywhere; }
+#chip { color: var(--txt-1); }
+#chip .sep { color: var(--txt-4); }
 #off { color: var(--txt-3); border: 0; padding: 0; }
 #off:hover { color: var(--txt-1); }
 #alert {
@@ -70,10 +72,10 @@ dd { color: var(--txt-1); margin: 0; overflow-wrap: anywhere; }
     height: 2px;
     pointer-events: none;
     background: var(--warn);
-    animation: termbar-pulse 3s ease-in-out infinite;
+    animation: labstart-pulse 3s ease-in-out infinite;
 }
 #alert[data-severity="crit"] { background: var(--txt-err); }
-@keyframes termbar-pulse { 50% { opacity: 0.35; } }
+@keyframes labstart-pulse { 50% { opacity: 0.35; } }
 @media (prefers-reduced-motion: reduce) {
     #corner { transition: none; }
     #alert { animation: none; }

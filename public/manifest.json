@@ -1,9 +1,9 @@
 {
     "manifest_version": 3,
-    "name": "termbar",
+    "name": "labstart",
     "version": "0.1.0",
     "minimum_chrome_version": "120",
-    "description": "a terminal-style new tab, site status chip and floating status panel.",
+    "description": "a terminal-style new tab with homelab status, a site connection chip and a floating status HUD.",
     "icons": {
         "16": "icons/16.png",
         "32": "icons/32.png",
@@ -11,7 +11,7 @@
         "128": "icons/128.png"
     },
     "action": {
-        "default_title": "termbar HUD"
+        "default_title": "labstart HUD"
     },
     "background": {
         "service_worker": "background.js",
@@ -24,12 +24,16 @@
     "optional_host_permissions": ["http://*/*", "https://*/*"],
     "web_accessible_resources": [{
         "resources": ["icons/geist-mono.woff2", "hud-panel.html"],
-        "matches": ["http://*/*", "https://*/*"]
+        "matches": ["http://*/*", "https://*/*"],
+        "use_dynamic_url": true
     }],
     "commands": {
         "toggle-chip": {
             "suggested_key": { "default": "Alt+Shift+S" },
             "description": "toggle the site chip"
+        },
+        "toggle-hud": {
+            "description": "toggle the floating HUD (closes it from anywhere; opening needs a page or the launcher)"
         }
     }
 }

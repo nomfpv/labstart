@@ -1,6 +1,6 @@
 const LEVEL = { ok: 0, warn: 1, crit: 2 }
 const SAMPLE_LIMIT = 32
-export const ALERT_DEBOUNCE_MS = 1200
+export const ALERT_DEBOUNCE_MS = 5000
 
 export function worstSeverity(values) {
     return values.reduce((highest, value) => LEVEL[value] > LEVEL[highest] ? value : highest, 'ok')

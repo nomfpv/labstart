@@ -1,6 +1,6 @@
 import { defaultCustomColors } from '../config/themes.js'
 
-const todoistSecretKey = 'termbarTodoistToken'
+const todoistSecretKey = 'labstartTodoistToken'
 const extensionStorage = globalThis.chrome?.storage?.local
 let todoistReady = false
 let lastTodoistToken

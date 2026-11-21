@@ -3,21 +3,12 @@ import '../app.css'
 import './hud.css'
 import { applySavedTheme } from './theme.js'
 import { CONFIG_KEY, STATE_KEY, normalizeConfig } from './data/config.js'
-import { boxMetric, displayedBoxes, formatMetric } from './metrics.js'
+import { boxMetric, displayedBoxes, formatMetric, sparkPath } from './metrics.js'
 import { isHudShortcut } from './pip.js'
 
 const rows = document.querySelector('#rows')
-const palette = '▁▂▃▄▅▆▇█'
 let config = normalizeConfig()
 let state
-
-function sparkline(history) {
-    const points = history.filter(Number.isFinite).slice(-14)
-    if (points.length < 2) return ''
-    const min = Math.min(...points)
-    const spread = Math.max(...points) - min
-    return points.map((value) => palette[spread ? Math.round((value - min) * 7 / spread) : 3]).join('')
-}
 
 function render() {
     if (document.hidden) return
@@ -52,9 +43,22 @@ function render() {
         const name = document.createElement('span')
         name.textContent = label
         const plot = document.createElement('span')
-        plot.className = 'spark'
-        plot.textContent = sparkline(metric.history || [])
+        plot.className = 'spark ' + (metric.severity || '')
         plot.setAttribute('aria-hidden', 'true')
+        const path = sparkPath(metric.history)
+        if (path) {
+            const ns = 'http://www.w3.org/2000/svg'
+            const svg = document.createElementNS(ns, 'svg')
+            svg.setAttribute('viewBox', '0 0 100 20')
+            svg.setAttribute('preserveAspectRatio', 'none')
+            for (const [name, d] of [['area', path.area], ['line', path.line]]) {
+                const shape = document.createElementNS(ns, 'path')
+                shape.setAttribute('class', name)
+                shape.setAttribute('d', d)
+                svg.append(shape)
+            }
+            plot.append(svg)
+        }
         const value = document.createElement('strong')
         value.textContent = formatMetric(metric)
         value.className = metric.severity || ''

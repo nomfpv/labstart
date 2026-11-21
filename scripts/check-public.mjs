@@ -8,6 +8,8 @@ import { inflateSync } from 'node:zlib'
 const ipv4 = /(?<![\d.])(?:\d{1,3}\.){3}\d{1,3}(?!\d|\.\d)/g
 const ipv6 = /(?<![\w:])(?=[\da-f:]*:)[\da-f:]+(?:\d\.\d{1,3}\.\d{1,3}\.\d{1,3})?(?![\w:])/gi
 const ipv4Examples = /^(?:192\.0\.2\.|198\.51\.100\.|203\.0\.113\.|10\.66\.66\.2$)/
+// Public anycast endpoints the extension uses on purpose (Cloudflare trace for the egress check).
+const publicEndpoints = new Set(['1.1.1.1', '2606:4700:4700::1111'])
 const ipv6Examples = /^(?:2001:0?db8:|3fff:(?:[0-9a-f]{1,3}:|:))/i
 const mac = /\b[\da-f]{2}(?::[\da-f]{2}){5}\b|\b[\da-f]{2}(?:-[\da-f]{2}){5}\b/i
 const tokens = [
@@ -34,11 +36,11 @@ export function readPrivatePatterns(text) {
 
 export function scanText(text, privatePatterns = []) {
     const hits = new Set()
-    if ([...text.matchAll(ipv4)].some(([value]) => isIP(value) === 4 && !ipv4Examples.test(value))) {
+    if ([...text.matchAll(ipv4)].some(([value]) => isIP(value) === 4 && !ipv4Examples.test(value) && !publicEndpoints.has(value))) {
         hits.add('IPv4 address')
     }
     if ([...text.matchAll(ipv6)].some(([value]) =>
-        value !== '::' && isIP(value) === 6 && !ipv6Examples.test(value))) {
+        value !== '::' && isIP(value) === 6 && !ipv6Examples.test(value) && !publicEndpoints.has(value.toLowerCase()))) {
         hits.add('IPv6 address')
     }
     if (mac.test(text)) hits.add('MAC address')

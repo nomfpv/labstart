@@ -34,9 +34,12 @@ async function responseText(response) {
 async function read(fetcher, url, { headers, credentials = 'omit', text = false, authError } = {}) {
     try {
         const response = await fetcher(url, {
-            method: 'GET', cache: 'no-store', credentials, redirect: 'error', headers,
+            method: 'GET', cache: 'no-store', credentials, redirect: 'manual', headers,
             signal: AbortSignal.timeout(REQUEST_TIMEOUT),
         })
+        if (response.type === 'opaqueredirect' || (response.status >= 300 && response.status < 400)) {
+            throw new SourceError('The source redirected. Enter the final URL (for example https:// instead of http://).')
+        }
         if (authError && [401, 403].includes(response.status)) throw new SourceError(authError)
         if (!response.ok) throw new SourceError(`The source returned HTTP ${response.status}.`)
         const body = await responseText(response)
@@ -81,6 +84,13 @@ function scalar(value) {
     return null
 }
 
+// Accepts "3 of 5", "3/5" and "3 / 5" as an amount and a total.
+export function fraction(value) {
+    if (typeof value !== 'string') return null
+    const match = value.match(/^\s*(-?\d+(?:\.\d+)?)\s*(?:of|\/)\s*(\d+(?:\.\d+)?)\s*$/i)
+    return match ? { amount: Number(match[1]), total: Number(match[2]) } : null
+}
+
 function count(value) {
     return Array.isArray(value) ? value.length : numberValue(value)
 }
@@ -91,7 +101,11 @@ export function mapCustom(raw, fields) {
         let display = scalar(value)
         let sample = typeof value === 'boolean' ? value : numberValue(value)
         if (field.transform === 'count') display = sample = count(value)
-        if (field.transform === 'ratio') {
+        const parts = fraction(value)
+        if (parts && field.transform !== 'count') {
+            display = `${parts.amount}/${parts.total}`
+            sample = parts.total > 0 ? round(parts.amount * 100 / parts.total) : null
+        } else if (field.transform === 'ratio') {
             const amount = count(value)
             const total = count(readPath(raw, field.totalPath))
             display = amount !== null && total !== null ? `${amount}/${total}` : null
@@ -157,7 +171,7 @@ async function kuma(source, _secret, fetcher) {
     return {
         raw: { page, heartbeat },
         metrics: {
-            monitors: metric('monitors', `${up} up / ${down} down`, '', severity, up),
+            monitors: metric('monitors', `${up}/${up + down} up`, '', severity, up),
             up: metric('up', up), down: metric('down', down, '', down ? 'crit' : 'ok'),
             pending: metric('pending', pending, '', pending ? 'warn' : 'ok'),
             maintenance: metric('maintenance', maintenance), total: metric('total', ids.size),

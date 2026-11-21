@@ -1,7 +1,7 @@
 <script>
     import { onMount } from 'svelte'
     import {
-        CONFIG_KEY, EGRESS_URLS, MIN_INTERVAL, RIPE_ORIGIN, SECRETS_KEY,
+        CONFIG_KEY, DOH_ORIGIN, EGRESS_URLS, MIN_INTERVAL, RIPE_ORIGIN, SECRETS_KEY,
         SOURCE_LABELS, SOURCE_TYPES, WEB_ORIGINS, normalizeConfig, normalizeSource, sourceOrigins,
     } from './data/config.js'
     import { runSource } from './data/adapters.js'
@@ -105,6 +105,7 @@
             const origins = [...new Set([
                 ...value.sources.filter((source) => source.enabled).flatMap(sourceOrigins),
                 ...(value.asnEnabled ? [RIPE_ORIGIN] : []),
+                ...(value.rdnsEnabled ? [DOH_ORIGIN] : []),
             ])]
             if (origins.length && !await chrome.permissions.request({ origins })) {
                 throw new Error('Grant access to the configured sources to save.')
@@ -184,7 +185,7 @@
             const url = URL.createObjectURL(blob)
             const link = document.createElement('a')
             link.href = url
-            link.download = 'termbar-config.json'
+            link.download = 'labstart-config.json'
             link.click()
             setTimeout(() => URL.revokeObjectURL(url), 1000)
             setStatus('Configuration exported.')
@@ -213,15 +214,15 @@
             siteText = config.disabledSites.join('\n')
             setStatus('Configuration loaded. Save to apply it.')
         } catch {
-            setStatus('Choose a valid termbar configuration JSON file.', true)
+            setStatus('Choose a valid labstart configuration JSON file.', true)
         }
     }
 </script>
 
 <main class="options">
     <header>
-        <h1>termbar options</h1>
-        <nav aria-label="termbar">
+        <h1>labstart options</h1>
+        <nav aria-label="labstart">
             <a href="./index.html">new tab</a>
             <a href="./hud.html">HUD</a>
             <button class="primary" onclick={save} disabled={!ready || busy}>save</button>
@@ -233,11 +234,13 @@
                 <h2 class="panel-label">overlays</h2>
                 <div class="panel flow">
                     <button onclick={changeAccess} disabled={!ready}>{hostsAllowed ? 'disable website overlays' : 'enable website overlays'}</button>
-                    <p class="hint">Website access lets termbar read main-document connection details and display the chip and alert line.</p>
+                    <p class="hint">Website access lets labstart read main-document connection details and display the chip and alert line.</p>
                     <label><input type="checkbox" bind:checked={config.chipEnabled} /> show site chip</label>
                     <label><input type="checkbox" bind:checked={config.notificationsEnabled} /> outage notifications</label>
                     <label><input type="checkbox" bind:checked={config.asnEnabled} /> resolve ASN using RIPEstat</label>
                     <p class="hint">RIPEstat receives visited sites’ remote IP addresses when this is enabled.</p>
+                    <label><input type="checkbox" bind:checked={config.rdnsEnabled} /> reverse DNS in the details box</label>
+                    <p class="hint">Asks Cloudflare DNS (cloudflare-dns.com) for the PTR name of a site’s IP, only when you open the details box.</p>
                     <label>hide chip on these sites <textarea rows="3" placeholder="example.com" bind:value={siteText}></textarea></label>
                 </div>
             </section>

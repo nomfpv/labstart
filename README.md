@@ -1,41 +1,48 @@
-# termbar
+# labstart
 
-Based on [re-start by refact0r](https://github.com/refact0r/re-start). termbar adds homelab and network status to its terminal-style new tab, plus a small site connection chip, a floating HUD and outage alerts.
+Based on [re-start by refact0r](https://github.com/refact0r/re-start). labstart adds homelab and network status to its terminal-style new tab, plus a small connection chip on web pages, a floating HUD and quiet outage alerts.
 
-![termbar new tab in demo mode](docs/new-tab.png)
+![new tab in demo mode](docs/new-tab.png)
 
-![Demo site chip expanded](docs/site-chip.png)
-![Demo floating HUD with sparklines](docs/hud.png)
+![site chip expanded](docs/site-chip.png) ![floating HUD](docs/hud.png)
 
 ## Install
 
-Build with Node 24, or extract the Chrome zip from Releases. On `helium://extensions` or `chrome://extensions`, turn on **Developer mode**, choose **Load unpacked**, and select `dist/chrome` or the extracted release folder.
+Download the zip from [Releases](../../releases) and extract it, or build it yourself with Node 24:
 
 ```sh
 npm ci
 npm run build
 ```
 
-The build writes `dist/chrome` and `dist/termbar-chrome-v0.1.0.zip`.
+Open `chrome://extensions` (in Helium `helium://extensions`), turn on **Developer mode**, click **Load unpacked** and pick the extracted folder or `dist/chrome`.
 
-Open **termbar** from the new tab to configure it. Enable **demo mode** to try the panels, then use **simulate outage** to see the alert. **Enable website overlays** to show the chip and alert line on web pages. The chip supports per-site hiding and **Alt+Shift+S** toggles it globally.
+## Use
 
-Use **Alt+Shift+H** on a supported secure page or the termbar new tab to toggle the floating HUD. The toolbar action opens the HUD or brings up the launcher, where **open floating HUD** supplies the browser's required user gesture. A HUD uses its opening document for its lifetime. Use the launcher if you plan to navigate the site tab. [Chrome Document Picture-in-Picture](https://developer.chrome.com/docs/web-platform/document-picture-in-picture/)
+Open **labstart** in the top right of the new tab to configure it. **Demo mode** fills everything with fake data, **simulate outage** shows the alert line and a notification.
 
-The new tab includes re-start's themes, weather, links, stats, tasks and custom CSS. Local and Todoist tasks ship in the release. To use Google Tasks, build with `TERMBAR_GOOGLE_TASKS_CLIENT_ID` set to an OAuth client ID registered for your unpacked extension ID, then grant identity access when signing in.
+- **New tab:** `homelab`, `net` and `claude` boxes with sparklines. Pick which boxes show, their order and which source feeds each row.
+- **Site chip:** click **enable website overlays** first. It shows address family, ASN, protocol and time to first byte. It stays faint, moves out of the way when the pointer comes near (move along the bottom edge of the window to reach it), hides while scrolling, in fullscreen and on video sites. Click it for details. **Alt+Shift+S** toggles it everywhere, and each site can be switched off.
+- **Floating HUD:** **Alt+Shift+H** on a web page or the new tab opens a Picture-in-Picture panel that stays on top of other windows. The browser only allows this after a key press or click inside a page, so the toolbar button opens a small launcher page when the current tab can't do it. The **toggle the floating HUD** shortcut on `chrome://extensions/shortcuts` has no key by default. Give it one (it can be global) to close the HUD from anywhere, for example from a game.
+- **Alerts:** when a check turns bad, a 2 px line appears along the top of web pages and one notification is sent per state change, at most once every 10 minutes per state.
 
-## Connect a source
+## Sources
 
-1. Under **sources**, choose **add source** and select its type. For custom JSON, use an endpoint such as `https://status.example.com/metrics`. Set the optional header name and value if it needs authentication.
-2. Add a field with metric ID `temp`, JSON path `cpu.temperature`, unit `°C`, warning `70`, and critical `85`. For a response like `{"cpu":{"temperature":57}}`, **test source** should show `57` with that unit. To display containers as `7/8`, use **part / total** with `containers.up` and `containers.total`. Its thresholds use the percentage.
-3. Choose the source and metric ID for the row in **new-tab boxes**, then **save** and grant access. Polling intervals start at 30 seconds. Sources include Uptime Kuma status pages, AdGuard Home, configurable Cloudflare-based IPv4/IPv6 egress checks, and optional unofficial Claude usage.
+Under **sources**, click **add source**, then **test source** to see the raw response and the mapped values. **save** asks for access to the source's host.
 
-For a private HTTP endpoint, run **test source** from the options page and allow access to the source origin. If the browser also prompts for Local Network Access, allow it there so future worker polls can use it. [Chrome Local Network Access](https://developer.chrome.com/docs/modern-web-guidance/guides/security/local-network-access)
+- **Custom JSON:** URL, optional header (`Authorization: Bearer …`), fields with dot paths (`cpu.temperature`, `disks[0].used`), unit and warn/crit thresholds. Arrays can be counted, booleans become yes/no, and values like `"3 of 5"` or `"3/5"` are read as a fraction (thresholds then use the percentage). Two separate paths work too, with **part / total**.
+- **Uptime Kuma** status page, **AdGuard Home** (basic auth), **own egress** IPv4/IPv6 via Cloudflare's trace endpoint, **Claude usage** (unofficial, off by default).
+
+Example: for `{"cpu":{"temperature":57},"tunnels":"3 of 3"}` from `http://192.0.2.10:9000/stats`, add the fields `cpu.temperature` (unit `°C`, warn `70`, crit `85`) and `tunnels` (crit `99`, direction below).
+
+Private `http://` addresses work once access to the host is granted. In Chromium 158 no extra Local Network Access prompt appeared for the extension.
 
 ## Privacy
 
-Source polling sends requests to the configured endpoints. Source credentials stay in local extension storage. JSON exports carry the settings and mappings. The chip reads the main document's IP and navigation timing from Chromium. Enabling ASN lookups sends public visited-site IPs to RIPEstat and caches returned prefixes for the browser session. Claude usage uses the existing claude.ai login when configured. The startpage contacts Open-Meteo for weather and contacts your configured task provider or ping target when used.
+Requests only go to the sources you configure. Credentials stay in local extension storage and are left out of exports. The chip uses the IP and timing the browser already has, without extra requests to the site. Optional, off by default: ASN lookup sends visited sites' IPs to RIPEstat, reverse DNS asks Cloudflare DNS for a site's PTR name when you open the details box. The new tab contacts Open-Meteo for weather and your task provider if you use one.
 
-The manifest uses storage for config and session status, alarms for polling, notifications for debounced state changes, and non-blocking webRequest for main-document IPs. Scripting injects the opt-in website overlays, and activeTab lets the toolbar try opening the HUD in the current tab. Source hosts and all-web overlay access are optional grants. The Google Tasks build adds optional identity.
+Permissions: `storage`, `alarms` (polling), `notifications`, `webRequest` (main-document IP, read only), `scripting` and `activeTab` (overlays and HUD). Website access and source hosts are optional and asked for when needed.
 
-MIT. See [LICENSE](LICENSE).
+## License
+
+MIT, see [LICENSE](LICENSE).

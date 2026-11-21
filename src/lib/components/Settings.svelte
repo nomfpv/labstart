@@ -147,7 +147,7 @@
         const url = URL.createObjectURL(blob)
         const a = document.createElement('a')
         a.href = url
-        a.download = 'termbar-startpage-settings.json'
+        a.download = 'labstart-startpage-settings.json'
         a.click()
         URL.revokeObjectURL(url)
     }
@@ -877,7 +877,7 @@
                 style="display: none;"
             />
             <div class="version">
-                termbar{#if version}&nbsp;v{version}{/if} •
+                labstart{#if version}&nbsp;v{version}{/if} •
                 <a href="https://github.com/refact0r/re-start" target="_blank"
                     ><span class="bracket">[</span><span class="action-text"
                         >github</span

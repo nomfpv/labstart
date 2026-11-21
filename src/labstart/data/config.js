@@ -1,17 +1,16 @@
-export const CONFIG_KEY = 'termbarConfig'
-export const SECRETS_KEY = 'termbarSecrets'
-export const STATE_KEY = 'termbarState'
+export const CONFIG_KEY = 'labstartConfig'
+export const SECRETS_KEY = 'labstartSecrets'
+export const STATE_KEY = 'labstartState'
 export const MIN_INTERVAL = 30
 export const WEB_ORIGINS = ['http://*/*', 'https://*/*']
 export const RIPE_ORIGIN = 'https://stat.ripe.net/*'
+export const DOH_ORIGIN = 'https://cloudflare-dns.com/*'
 export const CLAUDE_ORIGIN = 'https://claude.ai/*'
 
 // Cloudflare's public resolver addresses select the address family without DNS.
-const v4 = [1, 1, 1, 1].join('.')
-const v6 = [0x2606, 0x4700, 0x4700].map(part => part.toString(16)).join(':')
 export const EGRESS_URLS = {
-    ipv4: `https://${v4}/cdn-cgi/trace`,
-    ipv6: `https://[${v6}::${(0x1111).toString(16)}]/cdn-cgi/trace`,
+    ipv4: 'https://1.1.1.1/cdn-cgi/trace',
+    ipv6: 'https://[2606:4700:4700::1111]/cdn-cgi/trace',
 }
 
 export const SOURCE_TYPES = ['custom', 'kuma', 'adguard', 'egress', 'claude']
@@ -27,6 +26,7 @@ export const DEFAULT_CONFIG = {
     chipEnabled: true,
     disabledSites: [],
     asnEnabled: false,
+    rdnsEnabled: false,
     notificationsEnabled: true,
     boxes: [
         { id: 'homelab', label: 'homelab', enabled: true, rows: [
@@ -104,6 +104,7 @@ export function normalizeConfig(input) {
         chipEnabled: config.chipEnabled !== false,
         disabledSites: [...new Set(list(config.disabledSites).map(site => string(site).toLowerCase()).filter(Boolean))],
         asnEnabled: config.asnEnabled === true,
+        rdnsEnabled: config.rdnsEnabled === true,
         notificationsEnabled: config.notificationsEnabled !== false,
         boxes: uniqueById(boxes.slice(0, 16).map((input, index) => {
             const box = object(input)

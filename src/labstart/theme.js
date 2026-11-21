@@ -1,7 +1,7 @@
 import '../lib/config/themes.css'
 import { defaultCustomColors, defaultTheme, themes } from '../lib/config/themes.js'
 
-export const THEME_KEY = 'termbarTheme'
+export const THEME_KEY = 'labstartTheme'
 export const colorNames = ['--bg-1', '--bg-2', '--bg-3', '--txt-1', '--txt-2', '--txt-3', '--txt-4', '--txt-err']
 const customNames = ['bg1', 'bg2', 'bg3', 'txt1', 'txt2', 'txt3', 'txt4', 'txtErr']
 

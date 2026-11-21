@@ -1,8 +1,8 @@
 import { mount } from 'svelte'
 import './app.css'
 import App from './App.svelte'
-import { applySavedTheme } from './termbar/theme.js'
-import { installHudTrigger } from './termbar/pip.js'
+import { applySavedTheme } from './labstart/theme.js'
+import { installHudTrigger } from './labstart/pip.js'
 
 applySavedTheme()
 if (globalThis.chrome?.runtime?.id) installHudTrigger()

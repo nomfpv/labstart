@@ -39,7 +39,7 @@ describe('custom JSON', () => {
         const credential = 'sample value'
         const fetcher = vi.fn(async () => json({ ...fixture, echo: credential }))
         const result = await runSource(source('custom', { fields }), { headerName: 'X-Example', headerValue: credential }, { fetcher })
-        expect(fetcher).toHaveBeenCalledWith('https://status.example.com/', expect.objectContaining({ credentials: 'omit', redirect: 'error' }))
+        expect(fetcher).toHaveBeenCalledWith('https://status.example.com/', expect.objectContaining({ credentials: 'omit', redirect: 'manual' }))
         expect(fetcher.mock.calls[0][1].headers.get('x-example')).toBe(credential)
         expect(result.raw.echo).toBe('[redacted]')
     })
@@ -67,7 +67,7 @@ describe('Uptime Kuma', () => {
             '/kuma/api/status-page/main', '/kuma/api/status-page/heartbeat/main',
         ])
         expect(result.metrics).toMatchObject({
-            monitors: { value: '1 up / 1 down', severity: 'crit' },
+            monitors: { value: '1/2 up', severity: 'crit' },
             pending: { value: 2, severity: 'warn' }, maintenance: { value: 1 }, total: { value: 5 },
         })
     })
@@ -130,5 +130,23 @@ describe('unofficial Claude usage', () => {
         const check = fetcher => runSource(source('claude'), {}, { fetcher })
         await expect(check(async () => json({}, 401))).rejects.toThrow('Sign in to Claude')
         await expect(check(async () => json({}))).rejects.toThrow('organization response changed')
+    })
+})
+
+describe('custom JSON fractions and redirects', () => {
+    it('reads "x of y" strings as an amount and a total', () => {
+        const fields = normalizeSource({ fields: [
+            { id: 'tunnels', path: 'tunnels', crit: 50, direction: 'below' },
+            { id: 'slots', path: 'slots' },
+        ] }).fields
+        const mapped = mapCustom({ tunnels: '2 of 8', slots: '3/4' }, fields)
+        expect(mapped.tunnels).toMatchObject({ value: '2/8', sample: 25, severity: 'crit' })
+        expect(mapped.slots).toMatchObject({ value: '3/4', sample: 75 })
+    })
+
+    it('reports a redirect instead of a generic network error', async () => {
+        const fetcher = vi.fn(async () => new Response(null, { status: 301, headers: { location: 'https://status.example.com/' } }))
+        await expect(runSource(source('custom', { url: 'http://status.example.com', fields: [{ path: 'a' }] }), {}, { fetcher }))
+            .rejects.toThrow(/redirected/)
     })
 })
