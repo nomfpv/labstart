@@ -28,6 +28,7 @@ export const DEFAULT_CONFIG = {
     asnEnabled: false,
     rdnsEnabled: false,
     notificationsEnabled: true,
+    badge: { sourceId: '', metricId: '' },
     boxes: [
         { id: 'homelab', label: 'homelab', enabled: true, rows: [
             row('load'), row('temp'), row('containers'), row('tunnels'), row('monitors'),
@@ -106,6 +107,7 @@ export function normalizeConfig(input) {
         asnEnabled: config.asnEnabled === true,
         rdnsEnabled: config.rdnsEnabled === true,
         notificationsEnabled: config.notificationsEnabled !== false,
+        badge: { sourceId: string(object(config.badge).sourceId), metricId: string(object(config.badge).metricId) },
         boxes: uniqueById(boxes.slice(0, 16).map((input, index) => {
             const box = object(input)
             const id = normalizeId(box.id, `box-${index + 1}`)

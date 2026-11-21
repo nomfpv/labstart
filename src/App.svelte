@@ -10,7 +10,6 @@
     import { saveSettings } from './lib/stores/settings-store.svelte.js'
     import { isChrome } from './lib/utils/browser-detect.js'
     import { applyTheme, publishTheme } from './labstart/theme.js'
-    import { toggleHud, isHudShortcut } from './labstart/pip.js'
     import StatusBoxes from './labstart/StatusBoxes.svelte'
 
     let showSettings = $state(false)
@@ -49,11 +48,6 @@
     }
 
     function handleGlobalKeydown(event) {
-        if (isHudShortcut(event)) {
-            event.preventDefault()
-            toggleHud().catch(() => chrome.runtime.sendMessage({ type: 'labstart:open-launcher' }).catch(() => {}))
-            return
-        }
         if (showSettings) return
         if (!settings.linkHotkeys) return
         if (event.ctrlKey || event.altKey || event.metaKey) return

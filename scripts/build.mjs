@@ -5,7 +5,7 @@ import { build } from 'vite'
 
 const outDir = 'dist/chrome'
 await build()
-for (const entry of ['content', 'hud-trigger']) {
+for (const entry of ['content']) {
     await build({
         configFile: false,
         publicDir: false,

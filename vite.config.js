@@ -16,8 +16,7 @@ export default defineConfig({
             input: {
                 index: 'index.html',
                 options: 'options.html',
-                hud: 'hud.html',
-                'hud-panel': 'hud-panel.html',
+                popup: 'popup.html',
                 background: 'src/labstart/worker.js',
             },
             output: { entryFileNames: '[name].js' },

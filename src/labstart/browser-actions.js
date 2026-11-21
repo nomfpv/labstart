@@ -7,7 +7,6 @@ const overlay = {
     runAt: 'document_idle',
 }
 const themeKey = 'labstartTheme'
-const hudKey = 'labstartHudOwner'
 let overlayQueue = Promise.resolve()
 
 function syncOverlays(inject = false) {
@@ -35,49 +34,6 @@ chrome.runtime.onInstalled.addListener(() => syncOverlays().catch(() => {}))
 chrome.permissions.onAdded.addListener(() => syncOverlays(true).catch(() => {}))
 chrome.permissions.onRemoved.addListener(() => syncOverlays().catch(() => {}))
 
-async function dismissOwner(exceptTab) {
-    const { [hudKey]: owner } = await chrome.storage.session.get(hudKey)
-    if (owner?.tabId == null || owner.tabId === exceptTab) return false
-    const closed = await chrome.tabs.sendMessage(owner.tabId, { type: 'labstart:hud-dismiss' }).catch(() => false)
-    if (!closed) await chrome.storage.session.remove(hudKey)
-    return closed
-}
-
-async function tryHud(tabId) {
-    const target = { tabId }
-    const run = async () => {
-        if (!globalThis.labstartToggleHud) return 'missing'
-        try {
-            await globalThis.labstartToggleHud()
-            return 'handled'
-        } catch {
-            return 'blocked'
-        }
-    }
-    const invoke = () => chrome.scripting.executeScript({ target, func: run }).then((results) => results[0]?.result)
-    let result = await invoke()
-    if (result === 'missing') {
-        await chrome.scripting.executeScript({ target, files: ['hud-trigger.js'] })
-        result = await invoke()
-    }
-    return result === 'handled'
-}
-
-async function handleToolbar(tab) {
-    if (await dismissOwner()) return
-    if (tab?.id != null) {
-        if (await tryHud(tab.id).catch(() => false)) return
-    }
-    const url = chrome.runtime.getURL('hud.html')
-    const [launcher] = await chrome.tabs.query({ url })
-    if (launcher) await chrome.tabs.update(launcher.id, { active: true })
-    else await chrome.tabs.create({ url })
-}
-
-chrome.action.onClicked.addListener((tab) => handleToolbar(tab).catch(() => {}))
-chrome.commands.onCommand.addListener((command, tab) => {
-    if (command === 'toggle-hud') handleToolbar(tab).catch(() => {})
-})
 chrome.runtime.onMessage.addListener((message, sender, respond) => {
     if (sender.id !== chrome.runtime.id) return
     if (message?.type === 'labstart:theme') {
@@ -88,20 +44,6 @@ chrome.runtime.onMessage.addListener((message, sender, respond) => {
         chrome.windows.get(sender.tab.windowId).then((window) => respond(window.state === 'fullscreen'))
             .catch(() => respond(false))
         return true
-    }
-    if (message?.type === 'labstart:hud-presence' && sender.tab?.id != null) {
-        const owner = { tabId: sender.tab.id, documentId: sender.documentId }
-        if (message.open) chrome.storage.session.set({ [hudKey]: owner }).catch(() => {})
-        else chrome.storage.session.get(hudKey).then((data) => {
-            if (data[hudKey]?.documentId === owner.documentId) return chrome.storage.session.remove(hudKey)
-        }).catch(() => {})
-    }
-    if (message?.type === 'labstart:hud-dismiss-other' && sender.tab?.id != null) {
-        dismissOwner(sender.tab.id).then(respond).catch(() => respond(false))
-        return true
-    }
-    if (message?.type === 'labstart:open-launcher' && sender.tab?.id != null) {
-        chrome.tabs.create({ url: chrome.runtime.getURL('hud.html') }).catch(() => {})
     }
     if (message?.type === 'labstart:disable-site' && /^https?:/.test(sender.url || '')) {
         const hostname = new URL(sender.url).hostname

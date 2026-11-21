@@ -1,10 +1,10 @@
 # labstart
 
-Based on [re-start by refact0r](https://github.com/refact0r/re-start). labstart adds homelab and network status to its terminal-style new tab, plus a small connection chip on web pages, a floating HUD and quiet outage alerts.
+Based on [re-start by refact0r](https://github.com/refact0r/re-start). labstart adds homelab and network status to its terminal-style new tab, plus a toolbar badge with a status popup, a small connection chip on web pages and quiet outage alerts.
 
 ![new tab in demo mode](docs/new-tab.png)
 
-![site chip expanded](docs/site-chip.png) ![floating HUD](docs/hud.png)
+![site chip expanded](docs/site-chip.png)
 
 ## Install
 
@@ -19,11 +19,11 @@ Open `chrome://extensions` (in Helium `helium://extensions`), turn on **Develope
 
 ## Use
 
-Open **labstart** in the top right of the new tab to configure it. **Demo mode** fills everything with fake data, **simulate outage** shows the alert line and a notification.
+Open **labstart** in the top right of the new tab or **settings** in the toolbar popup to configure it. **Demo mode** fills everything with fake data, **simulate outage** shows the alert line and a notification.
 
 - **New tab:** `homelab`, `net` and `claude` boxes with sparklines. Pick which boxes show, their order and which source feeds each row.
+- **Toolbar:** the icon shows one value of your choice (for example the server temperature) and turns yellow or red when a check is bad. Click it for all boxes and a list of your other extensions: open their settings or switch them on and off.
 - **Site chip:** click **enable website overlays** first. It shows address family, ASN, protocol and time to first byte. It stays faint, moves out of the way when the pointer comes near (move along the bottom edge of the window to reach it), hides while scrolling, in fullscreen and on video sites. Click it for details. **Alt+Shift+S** toggles it everywhere, and each site can be switched off.
-- **Floating HUD:** **Alt+Shift+H** on a web page or the new tab opens a Picture-in-Picture panel that stays on top of other windows. The browser only allows this after a key press or click inside a page, so the toolbar button opens a small launcher page when the current tab can't do it. The **toggle the floating HUD** shortcut on `chrome://extensions/shortcuts` has no key by default. Give it one (it can be global) to close the HUD from anywhere, for example from a game.
 - **Alerts:** when a check turns bad, a 2 px line appears along the top of web pages and one notification is sent per state change, at most once every 10 minutes per state.
 
 ## Sources
@@ -41,7 +41,7 @@ Private `http://` addresses work once access to the host is granted. In Chromium
 
 Requests only go to the sources you configure. Credentials stay in local extension storage and are left out of exports. The chip uses the IP and timing the browser already has, without extra requests to the site. Optional, off by default: ASN lookup sends visited sites' IPs to RIPEstat, reverse DNS asks Cloudflare DNS for a site's PTR name when you open the details box. The new tab contacts Open-Meteo for weather and your task provider if you use one.
 
-Permissions: `storage`, `alarms` (polling), `notifications`, `webRequest` (main-document IP, read only), `scripting` and `activeTab` (overlays and HUD). Website access and source hosts are optional and asked for when needed.
+Permissions: `storage`, `alarms` (polling), `notifications`, `webRequest` (main-document IP, read only), `scripting` (overlays), `management` (extension list in the popup). Website access and source hosts are optional and asked for when needed.
 
 ## License
 

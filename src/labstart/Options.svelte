@@ -224,7 +224,6 @@
         <h1>labstart options</h1>
         <nav aria-label="labstart">
             <a href="./index.html">new tab</a>
-            <a href="./hud.html">HUD</a>
             <button class="primary" onclick={save} disabled={!ready || busy}>save</button>
         </nav>
     </header>
@@ -242,6 +241,25 @@
                     <label><input type="checkbox" bind:checked={config.rdnsEnabled} /> reverse DNS in the details box</label>
                     <p class="hint">Asks Cloudflare DNS (cloudflare-dns.com) for the PTR name of a site’s IP, only when you open the details box.</p>
                     <label>hide chip on these sites <textarea rows="3" placeholder="example.com" bind:value={siteText}></textarea></label>
+                </div>
+            </section>
+            <section class="panel-wrapper">
+                <h2 class="panel-label">toolbar</h2>
+                <div class="panel flow">
+                    <label>value on the toolbar icon
+                        <select value={config.badge.sourceId + '|' + config.badge.metricId} onchange={(event) => {
+                            const [sourceId, metricId] = event.currentTarget.value.split('|')
+                            config.badge = { sourceId, metricId }
+                        }}>
+                            <option value="|">none, only ! when something is wrong</option>
+                            {#each config.boxes as box}
+                                {#each box.rows.filter((row) => row.metricId) as row}
+                                    <option value={row.sourceId + '|' + row.metricId}>{box.label} · {row.label}</option>
+                                {/each}
+                            {/each}
+                        </select>
+                    </label>
+                    <p class="hint">The badge turns yellow or red when any check is bad. Click the icon for all values and a list of your extensions.</p>
                 </div>
             </section>
             <section class="panel-wrapper">
@@ -348,7 +366,7 @@
                             </div>
                         </details>
                     {/each}
-                    {#if !config.sources.length}<p class="hint">Add a source to fill the new-tab boxes and HUD with live data.</p>{/if}
+                    {#if !config.sources.length}<p class="hint">Add a source to fill the new-tab boxes with live data.</p>{/if}
                     <div><button onclick={addSource} disabled={!ready}>add source</button></div>
                 </div>
             </section>

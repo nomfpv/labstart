@@ -7,6 +7,7 @@ import {
     cachedAsn, fetchAsn, fetchPtr, navigationMatches, normalizeTiming, publicAddress, siteSnapshot,
 } from './data/site.js'
 import { EMPTY_STATE, makeState, queueAlert, sourceSnapshot, takeAlert } from './data/state.js'
+import { badgeText, boxMetric } from './metrics.js'
 
 const SOURCE_ALARM = 'labstart:source:'
 const DEMO_ALARM = 'labstart:demo'
@@ -149,9 +150,22 @@ async function updateState({ alarm, oldConfig, secretIds = [], startup = false, 
     }
 
     if (state !== previous || !previous.updatedAt) await chrome.storage.session.set({ [STATE_KEY]: state })
+    await updateBadge(state, config).catch(() => {})
     const changedPageConfig = oldConfig && JSON.stringify(pageConfig(oldConfig)) !== JSON.stringify(pageConfig(config))
     if (previous.severity !== state.severity || changedPageConfig || availabilityChanged) await publishAlertLine(state, config)
     await updateAlert(state.severity, config.notificationsEnabled)
+}
+
+const BADGE_COLORS = { ok: '#3a3a3a', warn: '#a87d12', crit: '#b23a3a' }
+async function updateBadge(state, config) {
+    const severity = BADGE_COLORS[state?.severity] ? state.severity : 'ok'
+    const metric = config.badge.metricId ? boxMetric(state, config.badge) : null
+    const text = badgeText(metric) || (severity === 'ok' ? '' : '!')
+    const problems = Object.values(state?.sources ?? {}).filter((source) => source.severity !== 'ok').map((source) => source.label)
+    await chrome.action.setBadgeText({ text })
+    await chrome.action.setBadgeBackgroundColor({ color: BADGE_COLORS[severity] })
+    await chrome.action.setBadgeTextColor?.({ color: '#ffffff' })
+    await chrome.action.setTitle({ title: problems.length ? 'labstart: ' + problems.join(', ') : 'labstart: all ok' })
 }
 
 function lookupAsn(ip) {

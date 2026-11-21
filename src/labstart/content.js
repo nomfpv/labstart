@@ -1,5 +1,4 @@
 import style from './content.css?inline'
-import { installHudTrigger, isHudShortcut, toggleHud } from './pip.js'
 
 const videoHosts = /(^|\.)(youtube\.com|youtu\.be|netflix\.com|twitch\.tv|vimeo\.com|disneyplus\.com|primevideo\.com|hulu\.com|max\.com)$/i
 
@@ -163,13 +162,11 @@ function startOverlay() {
         }
     }
     chrome.runtime.onMessage.addListener(messages)
-    installHudTrigger()
     globalThis.labstartCloseOverlay = () => {
         controller.abort()
         clearTimeout(scrollTimer)
         clearTimeout(resizeTimer)
         chrome.runtime.onMessage.removeListener(messages)
-        if (!window.documentPictureInPicture?.window) globalThis.labstartStopHudTrigger?.()
         host.remove()
         delete globalThis.labstartCloseOverlay
     }
@@ -188,10 +185,6 @@ function startOverlay() {
     }, active)
     window.addEventListener('pageshow', getSite, active)
     window.addEventListener('keydown', (event) => {
-        if (isHudShortcut(event)) {
-            event.preventDefault()
-            toggleHud().catch(() => chrome.runtime.sendMessage({ type: 'labstart:open-launcher' }).catch(() => {}))
-        }
         if (event.key === 'Escape' && !details.hidden) {
             displayDetails(false)
             chip.focus()

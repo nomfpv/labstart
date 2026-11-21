@@ -48,3 +48,14 @@ export function boxSeverity(state, box) {
         return LEVEL[severity] > LEVEL[worst] ? severity : worst
     }, 'ok')
 }
+
+// Toolbar badges fit about four characters, so values are rounded and units shortened.
+export function badgeText(metric) {
+    const value = metric?.value
+    if (value == null) return ''
+    if (typeof value === 'boolean') return value ? 'ok' : 'off'
+    if (typeof value !== 'number') return String(value).slice(0, 4)
+    const number = Math.abs(value) >= 10000 ? Math.round(value / 1000) + 'k' : String(Math.round(value))
+    const unit = metric.unit === '%' ? '%' : metric.unit?.startsWith('°') ? '°' : ''
+    return (number + unit).slice(0, 4)
+}
