@@ -1,0 +1,35 @@
+{
+    "manifest_version": 3,
+    "name": "termbar",
+    "version": "0.1.0",
+    "minimum_chrome_version": "120",
+    "description": "a terminal-style new tab, site status chip and floating status panel.",
+    "icons": {
+        "16": "icons/16.png",
+        "32": "icons/32.png",
+        "48": "icons/48.png",
+        "128": "icons/128.png"
+    },
+    "action": {
+        "default_title": "termbar HUD"
+    },
+    "background": {
+        "service_worker": "background.js",
+        "type": "module"
+    },
+    "chrome_url_overrides": { "newtab": "index.html" },
+    "options_ui": { "page": "options.html", "open_in_tab": true },
+    "permissions": ["alarms", "storage", "scripting", "webRequest", "notifications", "activeTab"],
+    "optional_permissions": ["identity"],
+    "optional_host_permissions": ["http://*/*", "https://*/*"],
+    "web_accessible_resources": [{
+        "resources": ["icons/geist-mono.woff2", "hud-panel.html"],
+        "matches": ["http://*/*", "https://*/*"]
+    }],
+    "commands": {
+        "toggle-chip": {
+            "suggested_key": { "default": "Alt+Shift+S" },
+            "description": "toggle the site chip"
+        }
+    }
+}

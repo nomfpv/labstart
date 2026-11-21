@@ -1,0 +1,47 @@
+.options { max-width: 76rem; margin: auto; padding: 2rem 1.25rem 4rem; }
+.options header { display: flex; justify-content: space-between; gap: 1rem; align-items: baseline; margin-bottom: 1.5rem; }
+.options h1 { margin: 0; font-size: 1.75rem; }
+.options p { margin: 0.4rem 0; }
+.options nav, .toolbar { display: flex; gap: 0.65rem; flex-wrap: wrap; align-items: center; }
+.options button, .options nav a { border: 1px solid var(--bg-3); color: var(--txt-2); padding: 0.24rem 0.48rem; }
+.options button:enabled:hover, .options nav a:hover { color: var(--txt-1); background: var(--bg-2); }
+.options button:disabled { opacity: 0.48; }
+.options button.primary { background: var(--bg-3); color: var(--txt-1); }
+.options .panel-label { font-size: 1rem; margin: 0; color: var(--txt-2); }
+.options .panel { padding: 1.15rem; }
+.options .layout { display: grid; gap: 1.5rem; grid-template-columns: minmax(17rem, 0.75fr) minmax(0, 1.65fr); align-items: start; }
+.options .stack { display: grid; gap: 1.5rem; min-width: 0; }
+.options .flow { display: grid; gap: 0.65rem; }
+.options h2, .options h3 { font-weight: var(--font-weight); }
+.options h3 { margin: 0; font-size: 1rem; }
+.options .hint { color: var(--txt-2); opacity: 0.72; font-size: 0.8rem; }
+.options .form-grid, .options .row-fields { display: grid; gap: 0.55rem; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.options .row-fields { grid-template-columns: repeat(3, minmax(0, 1fr)) auto; align-items: end; }
+.options label { display: grid; gap: 0.2rem; font-size: 0.85rem; min-width: 0; }
+.options label:has(input[type=checkbox]) { display: flex; gap: 0.55rem; align-items: baseline; }
+.options input:not([type=checkbox]), .options select, .options textarea {
+    width: 100%;
+    border: 1px solid var(--bg-3);
+    background: var(--bg-1);
+    padding: 0.32rem 0.4rem;
+    color: var(--txt-1);
+    font: inherit;
+    border-radius: 0;
+}
+.options input[type=checkbox] { accent-color: var(--txt-3); margin: 0; }
+.options :is(button, a, input, textarea, select):focus-visible { outline: 1px solid var(--txt-1); outline-offset: 2px; }
+.options .wide { grid-column: 1 / -1; }
+.options .card { border: 1px solid var(--bg-3); padding: 0.65rem; min-width: 0; }
+.options details { min-width: 0; }
+.options summary { cursor: pointer; }
+.options details[open] > summary { margin-bottom: 0.65rem; color: var(--txt-1); }
+.options pre { overflow: auto; max-height: 20rem; color: var(--txt-1); font-size: 0.8rem; margin-bottom: 0; }
+.options .status { min-height: 1.6em; color: var(--txt-1); }
+.options .status.failure { color: var(--txt-err); }
+.options .box-header { display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap; justify-content: space-between; }
+.options .field-list { display: grid; gap: 0.55rem; }
+@media(max-width: 52rem) { .options .layout { grid-template-columns: 1fr; } }
+@media(max-width: 35rem) {
+    .options header { align-items: flex-start; flex-direction: column; }
+    .options .row-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

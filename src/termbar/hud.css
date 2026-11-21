@@ -1,0 +1,21 @@
+main { margin: 0.95rem 0.8rem 0.8rem; }
+h1 { margin: 0; font-size: inherit; font-weight: inherit; }
+.panel { padding: 0.85rem; }
+#close {
+    position: absolute;
+    top: -0.8rem;
+    right: 0.6rem;
+    background: var(--bg-1);
+    padding: 0 0.25rem;
+}
+.hud-row { display: grid; grid-template-columns: minmax(4.5rem, 1fr) auto auto; gap: 0.5rem; }
+.hud-row span, .hud-row strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hud-row strong { color: var(--txt-1); font-weight: inherit; text-align: right; max-width: 8rem; }
+.hud-row:not(:last-child) { margin-bottom: 0.25rem; }
+.spark { color: var(--txt-3); letter-spacing: -0.075em; font-size: 0.75rem; align-self: center; }
+.hud-row .warn { color: var(--termbar-warn); }
+.hud-row .crit { color: var(--txt-err); }
+.launcher { max-width: 38rem; margin: 3rem auto; padding: 0 1rem; }
+.launcher button, .launcher a { color: var(--txt-1); border: 1px solid var(--bg-3); padding: 0.45rem 0.7rem; }
+.launcher button:hover, .launcher a:hover { background: var(--bg-2); }
+#status { color: var(--txt-2); margin-bottom: 0; }

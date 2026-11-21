@@ -1,0 +1,80 @@
+:host { all: initial !important; }
+.overlay {
+    --bg-1: #141414;
+    --bg-2: #1c1c1c;
+    --bg-3: #333;
+    --txt-1: #e3e3e3;
+    --txt-2: #aeaeae;
+    --txt-3: #838383;
+    --txt-4: #777;
+    --txt-err: #e77f88;
+    --font-family: "Geist Mono Variable", monospace;
+    --font-weight: 400;
+    --warn: color-mix(in oklch, #d79235, var(--txt-1) 20%);
+    color: var(--txt-2);
+    font: var(--font-weight) 12px/1.4 var(--font-family);
+    font-variant-numeric: tabular-nums;
+}
+[hidden] { display: none !important; }
+#corner {
+    position: fixed;
+    z-index: 2147483646;
+    inset: auto 12px 10px auto;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    opacity: 0.52;
+    transition: opacity 180ms ease, translate 200ms ease;
+}
+#corner[data-video] { opacity: 0.22; }
+#corner:hover, #corner:focus-within, #corner[data-expanded] { opacity: 1; }
+#corner[data-scroll] { opacity: 0; pointer-events: none; }
+#corner[data-away] { translate: 0 calc(100% + 10px); pointer-events: none; }
+button {
+    color: inherit;
+    cursor: pointer;
+    font: inherit;
+    border: 1px solid var(--bg-3);
+    border-radius: 0;
+    padding: 4px 7px;
+    background: var(--bg-1);
+}
+button:focus-visible { outline: 1px solid var(--txt-1); outline-offset: 2px; }
+#details {
+    position: relative;
+    width: min(20rem, calc(100vw - 24px));
+    box-sizing: border-box;
+    background: var(--bg-1);
+    border: 1px solid var(--bg-3);
+    margin-bottom: 8px;
+    padding: 10px;
+}
+#details h2 {
+    position: absolute;
+    inset: -0.72em auto auto 7px;
+    font: inherit;
+    color: var(--txt-3);
+    background: var(--bg-1);
+    padding: 0 4px;
+    margin: 0;
+}
+dl { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 3px 10px; margin: 0 0 7px; }
+dt { color: var(--txt-3); }
+dd { color: var(--txt-1); margin: 0; overflow-wrap: anywhere; }
+#off { color: var(--txt-3); border: 0; padding: 0; }
+#off:hover { color: var(--txt-1); }
+#alert {
+    position: fixed;
+    z-index: 2147483647;
+    inset: 0 0 auto;
+    height: 2px;
+    pointer-events: none;
+    background: var(--warn);
+    animation: termbar-pulse 3s ease-in-out infinite;
+}
+#alert[data-severity="crit"] { background: var(--txt-err); }
+@keyframes termbar-pulse { 50% { opacity: 0.35; } }
+@media (prefers-reduced-motion: reduce) {
+    #corner { transition: none; }
+    #alert { animation: none; }
+}
